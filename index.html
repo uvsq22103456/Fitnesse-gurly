@@ -3,60 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FITNESS ULTIME</title>
-    
+    <title>FITNESS PRO</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Fitness">
-    
-    <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=F&background=020617&color=fff&size=512&font-size=0.6&bold=true">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
         :root { --bg: #020617; --card: #0f172a; --text: #f1f5f9; --accent: #f472b6; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg); color: var(--text); 
-            height: 100dvh; overflow: hidden; display: flex; flex-direction: column;
-            user-select: none; -webkit-tap-highlight-color: transparent;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
         .safe-pt { padding-top: env(safe-area-inset-top); }
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
-        .view-container { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .nav-active { color: var(--accent); opacity: 1 !important; transform: scale(1.1); }
+        .view-container { flex: 1; overflow-y: auto; padding-bottom: 120px; }
         
-        /* Calendrier */
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .cal-day { 
             aspect-ratio: 1/1.2; background: rgba(255,255,255,0.03); border-radius: 8px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: start; 
-            padding-top: 4px; font-size: 10px; font-weight: 800; border: 1px solid rgba(255,255,255,0.05);
+            display: flex; flex-direction: column; align-items: center; position: relative;
+            padding-top: 4px; font-size: 11px; font-weight: 800; border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
         }
-        .cal-label { font-size: 6px; text-transform: uppercase; color: var(--accent); text-align: center; margin-top: 2px; overflow: hidden; width: 90%; white-space: nowrap; }
-        .today { border: 1px solid #38bdf8; background: rgba(56, 189, 248, 0.1); }
+        .day-selected { border: 2px solid var(--accent) !important; background: rgba(244, 114, 182, 0.15) !important; transform: scale(1.05); z-index: 10; }
+        .day-today { color: #38bdf8; text-decoration: underline; }
+        
+        .plan-badge { font-size: 6px; text-transform: uppercase; color: var(--accent); margin-top: 2px; text-align: center; width: 90%; overflow: hidden; }
+        .add-plan-btn { position: absolute; bottom: 1px; right: 1px; font-size: 8px; opacity: 0.4; }
 
-        progress { border-radius: 20px; height: 8px; width: 100%; border: none; overflow: hidden; }
-        progress::-webkit-progress-bar { background-color: rgba(255,255,255,0.05); }
+        progress { border-radius: 20px; height: 8px; width: 100%; border: none; overflow: hidden; background: rgba(255,255,255,0.05); }
         #barCals::-webkit-progress-value { background: #38bdf8; }
         #barProt::-webkit-progress-value { background: #f472b6; }
-
-        input, select { background: rgba(255,255,255,0.05) !important; color: white !important; outline: none; border: 1px solid rgba(255,255,255,0.1) !important; }
-        .tab-btn { flex: 1; padding: 12px; font-size: 10px; font-weight: 900; text-transform: uppercase; border-radius: 12px; transition: 0.2s; }
-        .tab-btn.active { background: var(--accent); color: white; }
+        
+        input { background: rgba(255,255,255,0.05) !important; color: white !important; outline: none; border: 1px solid rgba(255,255,255,0.1) !important; }
+        .nav-active { color: var(--accent); opacity: 1 !important; }
     </style>
 </head>
 <body>
 
-    <header class="bg-slate-950/50 border-b border-white/5 safe-pt">
-        <div class="px-6 py-4 flex justify-between items-center">
-            <div>
-                <button onclick="changeMonth(-1)" class="text-xs opacity-30">◀</button>
-                <span id="month-name" class="mx-4 text-lg font-extrabold italic">Mars 2026</span>
-                <button onclick="changeMonth(1)" class="text-xs opacity-30">▶</button>
+    <header class="bg-slate-950/80 border-b border-white/5 safe-pt backdrop-blur-xl sticky top-0 z-50">
+        <div class="px-6 py-4 flex flex-col items-center">
+            <div class="flex items-center justify-between w-full mb-3">
+                <button onclick="changeMonth(-1)" class="p-2 opacity-40">◀</button>
+                <h2 id="month-name" class="text-sm font-black uppercase tracking-widest italic">Mars 2026</h2>
+                <button onclick="changeMonth(1)" class="p-2 opacity-40">▶</button>
             </div>
-            <div class="text-right">
-                <p class="text-[8px] font-black opacity-30 uppercase">Série</p>
-                <p class="text-orange-500 font-black" id="streak">0</p>
+            <div class="flex items-center gap-3">
+                <span id="date-label" class="text-[10px] font-black uppercase text-pink-500 bg-pink-500/10 px-4 py-1 rounded-full">Aujourd'hui</span>
             </div>
         </div>
     </header>
@@ -64,229 +55,171 @@
     <main class="view-container p-4 space-y-6">
         
         <section id="view-home" class="view-content space-y-6">
-            <div class="bg-slate-900/50 p-4 rounded-[1.5rem] border border-white/5 shadow-2xl">
-                <div class="grid grid-cols-7 text-[8px] font-black uppercase opacity-30 text-center mb-2 tracking-widest">
+            <div class="bg-slate-900/50 p-4 rounded-[1.5rem] border border-white/5">
+                <div class="grid grid-cols-7 text-[8px] font-black uppercase opacity-20 text-center mb-2">
                     <span>Lu</span><span>Ma</span><span>Me</span><span>Je</span><span>Ve</span><span>Sa</span><span>Di</span>
                 </div>
                 <div id="calendar-grid" class="cal-grid"></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div onclick="addWater()" class="bg-sky-500/10 p-5 rounded-[2rem] border border-sky-500/20 text-center active:scale-95 transition">
-                    <span class="block text-[8px] font-black uppercase text-sky-400 mb-1">💧 Eau</span>
-                    <span class="text-2xl font-black text-sky-400" id="water-val">0</span>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div onclick="addWater()" class="bg-sky-500/10 p-5 rounded-3xl border border-sky-500/20 text-center active:scale-95 transition">
+                        <span class="block text-[8px] font-black uppercase text-sky-400 mb-1">💧 Eau</span>
+                        <span class="text-2xl font-black text-sky-400" id="water-val">0</span>
+                    </div>
+                    <div class="bg-emerald-500/10 p-5 rounded-3xl border border-emerald-500/20 text-center">
+                        <span class="block text-[8px] font-black uppercase text-emerald-400 mb-1">🏋️ Vol. Muscu</span>
+                        <span class="text-2xl font-black text-emerald-400" id="vol-val">0</span>
+                    </div>
                 </div>
-                <div class="bg-emerald-500/10 p-5 rounded-[2rem] border border-emerald-500/20 text-center">
-                    <span class="block text-[8px] font-black uppercase text-emerald-400 mb-1">⚡ Vol. Force</span>
-                    <span class="text-2xl font-black text-emerald-400" id="vol-val">0</span>
-                </div>
-            </div>
 
-            <div class="bg-slate-900/50 p-6 rounded-[2rem] border border-white/5 grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[8px] font-black opacity-30 uppercase block mb-2">💤 Sommeil (h)</label>
-                    <input type="number" id="in-sleep" onchange="saveLife()" class="w-full p-3 rounded-xl text-center font-bold">
-                </div>
-                <div>
-                    <label class="text-[8px] font-black opacity-30 uppercase block mb-2">👣 Pas</label>
-                    <input type="number" id="in-steps" onchange="saveLife()" class="w-full p-3 rounded-xl text-center font-bold">
+                <div class="bg-slate-900/50 p-6 rounded-3xl border border-white/5 space-y-4">
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-[9px] font-black uppercase opacity-40"><span>Calories</span><span id="txt-cals">0/2100</span></div>
+                        <progress id="barCals" value="0" max="2100"></progress>
+                        <div class="flex justify-between text-[9px] font-black uppercase opacity-40"><span>Protéines</span><span id="txt-prot">0/130g</span></div>
+                        <progress id="barProt" value="0" max="130"></progress>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <section id="view-sport" class="view-content hidden space-y-4">
-            <div class="flex gap-2 mb-2">
-                <button onclick="setSportMode('muscu')" id="mode-muscu" class="tab-btn active">Musculation</button>
-                <button onclick="setSportMode('cardio')" id="mode-cardio" class="tab-btn bg-white/5">Cardio</button>
+        <section id="view-list" class="space-y-6">
+            <div id="day-content" class="space-y-4">
+                <h3 class="text-[10px] font-black uppercase opacity-20 tracking-widest text-center">Activités du jour</h3>
+                <div id="list-sport" class="space-y-2"></div>
+                <div id="list-food" class="space-y-2"></div>
             </div>
+        </section>
 
-            <div class="bg-slate-900/50 p-6 rounded-[2rem] border border-white/5">
-                <input type="text" id="exo-name" placeholder="NOM DE L'EXERCICE" class="w-full p-4 rounded-xl mb-3 font-bold uppercase text-sm">
-                
-                <div id="inputs-muscu" class="grid grid-cols-2 gap-3 mb-4">
+        <section id="form-sport" class="hidden space-y-4">
+            <div class="bg-slate-900/80 p-6 rounded-3xl border border-pink-500/20">
+                <input type="text" id="exo-n" placeholder="EXERCICE" class="w-full p-4 rounded-xl mb-3 font-bold uppercase text-sm">
+                <div class="grid grid-cols-2 gap-3 mb-4">
                     <input type="number" id="exo-w" placeholder="KG" class="p-4 rounded-xl text-center font-bold">
                     <input type="number" id="exo-r" placeholder="REPS" class="p-4 rounded-xl text-center font-bold">
                 </div>
-
-                <div id="inputs-cardio" class="grid grid-cols-2 gap-3 mb-4 hidden">
-                    <input type="number" id="exo-min" placeholder="MIN" class="p-4 rounded-xl text-center font-bold">
-                    <input type="number" id="exo-km" placeholder="KM" class="p-4 rounded-xl text-center font-bold">
-                </div>
-
-                <button onclick="addWorkout()" class="w-full bg-pink-500 py-4 rounded-2xl font-black uppercase text-xs shadow-lg">Enregistrer Série</button>
+                <button onclick="addWorkout()" class="w-full bg-pink-500 py-4 rounded-2xl font-black uppercase text-xs">Ajouter Série</button>
             </div>
-            <div id="list-sport" class="space-y-2"></div>
         </section>
 
-        <section id="view-food" class="view-content hidden space-y-4">
-            <div class="bg-slate-900/50 p-6 rounded-[2rem] border border-white/5 space-y-5">
-                <div class="space-y-3">
-                    <div class="flex justify-between text-[10px] font-black uppercase opacity-50">
-                        <span>Calories</span><span id="txt-cals">0 / 2100</span>
-                    </div>
-                    <progress id="barCals" value="0" max="2100"></progress>
-                    <div class="flex justify-between text-[10px] font-black uppercase opacity-50">
-                        <span>Protéines</span><span id="txt-prot">0 / 130g</span>
-                    </div>
-                    <progress id="barProt" value="0" max="130"></progress>
-                </div>
-                <hr class="opacity-5">
-                <input type="text" id="food-n" placeholder="ALIMENT" class="w-full p-4 rounded-xl font-bold uppercase text-sm">
-                <div class="grid grid-cols-2 gap-3">
+        <section id="form-food" class="hidden space-y-4">
+            <div class="bg-slate-900/80 p-6 rounded-3xl border border-emerald-500/20">
+                <input type="text" id="food-n" placeholder="ALIMENT" class="w-full p-4 rounded-xl mb-3 font-bold uppercase text-sm">
+                <div class="grid grid-cols-2 gap-3 mb-4">
                     <input type="number" id="food-k" placeholder="KCAL" class="p-4 rounded-xl text-center font-bold">
-                    <input type="number" id="food-p" placeholder="PROT (G)" class="p-4 rounded-xl text-center font-bold">
+                    <input type="number" id="food-p" placeholder="PROT" class="p-4 rounded-xl text-center font-bold">
                 </div>
-                <button onclick="addFood()" class="w-full bg-emerald-500 py-4 rounded-2xl font-black uppercase text-xs">Ajouter au repas</button>
+                <button onclick="addFood()" class="w-full bg-emerald-500 py-4 rounded-2xl font-black uppercase text-xs">Ajouter Repas</button>
             </div>
-            <div id="list-food" class="space-y-2 pb-10"></div>
         </section>
 
-        <section id="view-stats" class="view-content hidden space-y-4">
-            <div class="bg-slate-900/50 p-6 rounded-[2rem] border border-white/5 space-y-4 text-center">
-                <h3 class="font-black uppercase text-xs opacity-30 tracking-widest">Suivi Corporel</h3>
-                <input type="number" id="ms-w" placeholder="Poids (kg)" class="w-full p-4 rounded-xl text-center font-bold text-xl">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="number" id="ms-t" placeholder="Taille (cm)" class="p-4 rounded-xl text-center font-bold">
-                    <input type="number" id="ms-f" placeholder="Fessiers (cm)" class="p-4 rounded-xl text-center font-bold">
-                </div>
-                <button onclick="saveMeasures()" class="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase text-xs">Enregistrer Pesée</button>
-            </div>
-            <div id="list-history" class="space-y-2 pb-10"></div>
-        </section>
     </main>
 
-    <div id="plan-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-6">
-        <div class="bg-slate-900 w-full max-w-xs rounded-[2rem] p-6 border border-white/10">
-            <p class="text-[10px] font-black opacity-30 uppercase mb-4">Planifier : <span id="target-date"></span></p>
-            <input type="text" id="plan-input" placeholder="Ex: Jambes, Dos, Repos..." class="w-full p-4 rounded-xl mb-4 font-bold uppercase text-sm">
+    <div id="plan-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] hidden flex items-center justify-center p-6">
+        <div class="bg-slate-900 w-full max-w-xs rounded-3xl p-6 border border-white/10">
+            <p class="text-[10px] font-black opacity-30 uppercase mb-4 text-center">Séance prévue</p>
+            <input type="text" id="plan-in" placeholder="Ex: Jambes, Dos, Repos..." class="w-full p-4 rounded-xl mb-4 font-bold uppercase text-sm text-center">
             <div class="flex gap-2">
-                <button onclick="closeModal()" class="flex-1 py-3 opacity-50 font-bold text-xs">ANNULER</button>
-                <button onclick="savePlan()" class="flex-1 bg-pink-500 py-3 rounded-xl font-bold text-xs">VALIDER</button>
+                <button onclick="closeModal()" class="flex-1 py-3 opacity-50 font-bold text-[10px] uppercase">Annuler</button>
+                <button onclick="savePlan()" class="flex-1 bg-pink-500 py-3 rounded-xl font-bold text-[10px] uppercase">Valider</button>
             </div>
         </div>
     </div>
 
-    <nav class="bg-slate-950/80 backdrop-blur-xl border-t border-white/5 safe-pb">
+    <nav class="bg-slate-950/90 backdrop-blur-2xl border-t border-white/5 safe-pb fixed bottom-0 w-full z-50">
         <div class="flex justify-around items-center py-4">
-            <button onclick="tab('home', this)" class="nav-item flex flex-col items-center opacity-40 nav-active"><span class="text-xl">📅</span><span class="text-[8px] font-black uppercase mt-1">Focus</span></button>
-            <button onclick="tab('sport', this)" class="nav-item flex flex-col items-center opacity-40"><span class="text-xl">💪</span><span class="text-[8px] font-black uppercase mt-1">Sport</span></button>
-            <button onclick="tab('food', this)" class="nav-item flex flex-col items-center opacity-40"><span class="text-xl">🍎</span><span class="text-[8px] font-black uppercase mt-1">Food</span></button>
-            <button onclick="tab('stats', this)" class="nav-item flex flex-col items-center opacity-40"><span class="text-xl">⚖️</span><span class="text-[8px] font-black uppercase mt-1">Stats</span></button>
+            <button onclick="showView('home', this)" class="nav-item flex flex-col items-center opacity-30 nav-active"><span class="text-xl">📅</span><span class="text-[8px] font-black uppercase mt-1">Calendrier</span></button>
+            <button onclick="showView('sport', this)" class="nav-item flex flex-col items-center opacity-30"><span class="text-xl">💪</span><span class="text-[8px] font-black uppercase mt-1">Sport</span></button>
+            <button onclick="showView('food', this)" class="nav-item flex flex-col items-center opacity-30"><span class="text-xl">🍎</span><span class="text-[8px] font-black uppercase mt-1">Food</span></button>
         </div>
     </nav>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('fit_pro_master_v1')) || { 
-            workouts: [], food: [], water: {}, plan: {}, life: {}, measures: [] 
-        };
-        
-        let currentMonth = new Date();
-        let sportMode = 'muscu';
-        const todayStr = new Date().toISOString().split('T')[0];
-        let selDate = "";
+        let db = JSON.parse(localStorage.getItem('fit_pro_master_v10')) || { workouts:[], food:[], water:{}, plan:{} };
+        let curMonth = new Date();
+        let selD = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
 
-        function save() { localStorage.setItem('fit_pro_master_v1', JSON.stringify(db)); render(); }
+        function save() { localStorage.setItem('fit_pro_master_v10', JSON.stringify(db)); render(); }
 
-        function tab(id, el) {
-            document.querySelectorAll('.view-content').forEach(v => v.classList.add('hidden'));
-            document.getElementById('view-' + id).classList.remove('hidden');
+        function showView(view, btn) {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('form-sport').classList.add('hidden');
+            document.getElementById('form-food').classList.add('hidden');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('nav-active'));
-            el.classList.add('nav-active');
+            btn.classList.add('nav-active');
+
+            if(view === 'home') document.getElementById('view-home').classList.remove('hidden');
+            if(view === 'sport') document.getElementById('form-sport').classList.remove('hidden');
+            if(view === 'food') document.getElementById('form-food').classList.remove('hidden');
         }
 
-        function setSportMode(m) {
-            sportMode = m;
-            document.getElementById('mode-muscu').classList.toggle('active', m === 'muscu');
-            document.getElementById('mode-cardio').classList.toggle('active', m === 'cardio');
-            document.getElementById('inputs-muscu').classList.toggle('hidden', m !== 'muscu');
-            document.getElementById('inputs-cardio').classList.toggle('hidden', m !== 'cardio');
+        function selectDay(d) { selD = d; render(); }
+        function changeMonth(v) { curMonth.setMonth(curMonth.getMonth() + v); render(); }
+
+        function openPlan(e, d) {
+            e.stopPropagation(); // Empêche le clic de sélectionner le jour
+            selD = d;
+            document.getElementById('plan-in').value = db.plan[d] || "";
+            document.getElementById('plan-modal').classList.remove('hidden');
         }
-
-        function addWater() { db.water[todayStr] = (db.water[todayStr] || 0) + 1; save(); }
-
-        function addWorkout() {
-            const n = document.getElementById('exo-name').value;
-            if(!n) return;
-            let entry = { n, id: Date.now(), d: todayStr, mode: sportMode };
-            if(sportMode === 'muscu') {
-                entry.w = document.getElementById('exo-w').value || 0;
-                entry.r = document.getElementById('exo-r').value || 0;
-            } else {
-                entry.min = document.getElementById('exo-min').value || 0;
-                entry.km = document.getElementById('exo-km').value || 0;
-            }
-            db.workouts.unshift(entry);
-            document.getElementById('exo-name').value = ''; save();
-        }
-
-        function addFood() {
-            const n = document.getElementById('food-n').value, k = parseInt(document.getElementById('food-k').value)||0, p = parseInt(document.getElementById('food-p').value)||0;
-            if(!n || !k) return;
-            db.food.unshift({n, k, p, id: Date.now(), d: todayStr});
-            document.getElementById('food-n').value = ''; save();
-        }
-
-        function saveLife() {
-            db.life[todayStr] = { s: document.getElementById('in-sleep').value, st: document.getElementById('in-steps').value };
-            save();
-        }
-
-        function saveMeasures() {
-            const w = document.getElementById('ms-w').value, t = document.getElementById('ms-t').value, f = document.getElementById('ms-f').value;
-            if(!w) return;
-            db.measures.unshift({w, t, f, d: todayStr});
-            save();
-        }
-
-        function changeMonth(dir) {
-            currentMonth.setMonth(currentMonth.getMonth() + dir);
-            render();
-        }
-
-        function openPlan(d) { selDate = d; document.getElementById('target-date').innerText = d; document.getElementById('plan-input').value = db.plan[d] || ""; document.getElementById('plan-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('plan-modal').classList.add('hidden'); }
-        function savePlan() { db.plan[selDate] = document.getElementById('plan-input').value; closeModal(); save(); }
+        function savePlan() { db.plan[selD] = document.getElementById('plan-in').value; closeModal(); save(); }
+
+        function addWater() { db.water[selD] = (db.water[selD] || 0) + 1; save(); }
+        function addWorkout() {
+            const n = document.getElementById('exo-n').value; if(!n) return;
+            db.workouts.unshift({ n, w:document.getElementById('exo-w').value||0, r:document.getElementById('exo-r').value||0, d:selD, id:Date.now() });
+            document.getElementById('exo-n').value=''; save();
+        }
+        function addFood() {
+            const n = document.getElementById('food-n').value, k=parseInt(document.getElementById('food-k').value)||0, p=parseInt(document.getElementById('food-p').value)||0;
+            if(!n || !k) return;
+            db.food.unshift({n, k, p, d:selD, id:Date.now()});
+            document.getElementById('food-n').value=''; save();
+        }
 
         function render() {
-            // Header Month
-            const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-            document.getElementById('month-name').innerText = monthNames[currentMonth.getMonth()] + " " + currentMonth.getFullYear();
+            const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+            document.getElementById('month-name').innerText = months[curMonth.getMonth()] + " " + curMonth.getFullYear();
+            document.getElementById('date-label').innerText = (selD === today) ? "Aujourd'hui" : selD;
 
-            // Nutrition
-            const dayFood = db.food.filter(f => f.d === todayStr);
-            const k = dayFood.reduce((s,i)=>s+i.k, 0), p = dayFood.reduce((s,i)=>s+i.p, 0);
-            document.getElementById('txt-cals').innerText = `${k} / 2100`;
-            document.getElementById('txt-prot').innerText = `${p} / 130g`;
-            document.getElementById('barCals').value = k; document.getElementById('barProt').value = p;
-            
-            // Stats
-            document.getElementById('water-val').innerText = db.water[todayStr] || 0;
-            document.getElementById('vol-val').innerText = db.workouts.filter(w=>w.d===todayStr && w.mode==='muscu').reduce((s,i)=>s+(i.w*i.r), 0);
-            
+            const dayFood = db.food.filter(x => x.d === selD);
+            const dayWork = db.workouts.filter(x => x.d === selD);
+
+            // Update Stats
+            const tk = dayFood.reduce((s,i)=>s+i.k, 0), tp = dayFood.reduce((s,i)=>s+i.p, 0);
+            document.getElementById('txt-cals').innerText = tk + "/2100";
+            document.getElementById('txt-prot').innerText = tp + "/130g";
+            document.getElementById('barCals').value = tk; document.getElementById('barProt').value = tp;
+            document.getElementById('water-val').innerText = db.water[selD] || 0;
+            document.getElementById('vol-val').innerText = dayWork.reduce((s,i)=>s+(i.w*i.r), 0);
+
             // Listes
-            document.getElementById('list-sport').innerHTML = db.workouts.filter(w=>w.d===todayStr).map(i=>`
-                <div class="bg-slate-900/40 p-4 rounded-xl flex justify-between border border-white/5">
-                    <span class="font-bold uppercase text-xs">${i.n}</span>
-                    <span class="opacity-40 text-xs">${i.mode==='muscu' ? i.w+'kg x '+i.r : i.min+'min | '+i.km+'km'}</span>
-                </div>
-            `).join('');
-            
-            document.getElementById('list-food').innerHTML = dayFood.map(i=>`<div class="bg-slate-900/40 p-4 rounded-xl flex justify-between border border-white/5"><span class="font-bold uppercase text-xs">${i.n}</span><span class="opacity-40 text-xs">${i.k}kcal | ${i.p}g</span></div>`).join('');
-            document.getElementById('list-history').innerHTML = db.measures.map(i=>`<div class="bg-slate-900/40 p-4 rounded-xl text-[10px] flex justify-between border border-white/5"><span>${i.d}</span><span>Poids: ${i.w}kg | Fessiers: ${i.f || '--'}cm</span></div>`).join('');
+            document.getElementById('list-sport').innerHTML = dayWork.map(i=>`<div class="bg-white/5 p-4 rounded-2xl flex justify-between text-xs border border-white/5"><b>${i.n}</b><span class="opacity-40">${i.w}kg x ${i.r}</span></div>`).join('');
+            document.getElementById('list-food').innerHTML = dayFood.map(i=>`<div class="bg-white/5 p-4 rounded-2xl flex justify-between text-xs border border-white/5"><b>${i.n}</b><span class="opacity-40">${i.k}kcal</span></div>`).join('');
 
-            // Calendrier
+            // Cal
             const grid = document.getElementById('calendar-grid');
-            const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
-            const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-            const offset = firstDay === 0 ? 6 : firstDay - 1;
+            const daysInM = new Date(curMonth.getFullYear(), curMonth.getMonth() + 1, 0).getDate();
+            const start = new Date(curMonth.getFullYear(), curMonth.getMonth(), 1).getDay();
+            const offset = (start === 0 ? 6 : start - 1);
             grid.innerHTML = "";
             for(let i=0; i<offset; i++) grid.innerHTML += `<div></div>`;
-            for(let d=1; d<=daysInMonth; d++) {
-                const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                grid.innerHTML += `<div class="cal-day ${ds===todayStr?'today':''}" onclick="openPlan('${ds}')">${d}<div class="cal-label">${db.plan[ds]||''}</div></div>`;
+            for(let d=1; d<=daysInM; d++) {
+                const ds = `${curMonth.getFullYear()}-${String(curMonth.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const isSelected = (ds === selD) ? 'day-selected' : '';
+                const isToday = (ds === today) ? 'day-today' : '';
+                grid.innerHTML += `
+                    <div class="cal-day ${isSelected} ${isToday}" onclick="selectDay('${ds}')">
+                        ${d}
+                        <div class="plan-badge">${db.plan[ds] || ''}</div>
+                        <div class="add-plan-btn" onclick="openPlan(event, '${ds}')">➕</div>
+                    </div>`;
             }
         }
-
         render();
     </script>
 </body>
