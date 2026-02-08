@@ -25,11 +25,10 @@
         .safe-pt { padding-top: max(env(safe-area-inset-top), 20px); }
         .safe-pb { padding-bottom: max(env(safe-area-inset-bottom), 90px); }
         
-        /* CORRECTION SCROLL : Padding géant en bas */
         .view-container { 
             flex: 1; 
             overflow-y: auto; 
-            padding-bottom: 200px !important; /* Force l'espace en bas */
+            padding-bottom: 200px !important; 
             scroll-behavior: smooth; 
             -webkit-overflow-scrolling: touch; 
         }
@@ -92,7 +91,6 @@
                     <button onclick="changeMonth(1)" class="text-xl opacity-50 hover:opacity-100 p-2">→</button>
                 </div>
                 <div id="calendar-grid" class="cal-grid"></div>
-                
                 <div class="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
                     <div>
                         <div class="text-[9px] font-black uppercase opacity-40">Séance prévue le <span id="lbl-selected-date"></span></div>
@@ -101,6 +99,30 @@
                     <button onclick="openPlanModal()" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase text-black transition hover:scale-105" style="background: var(--primary)">
                         ➕ Planifier
                     </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="card p-4 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-black uppercase opacity-60">Sommeil</span>
+                        <span class="text-xl">🌙</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <input type="number" id="in-sleep" placeholder="-" class="w-12 p-1 text-center font-black bg-transparent border-b border-white/20 rounded-none focus:border-white text-lg" onchange="saveHealth('sleep')">
+                        <span class="text-xs font-bold opacity-50">Heures</span>
+                    </div>
+                </div>
+
+                <div class="card p-4 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-black uppercase opacity-60">Activité</span>
+                        <span class="text-xl">👣</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <input type="number" id="in-steps" placeholder="-" class="w-16 p-1 text-center font-black bg-transparent border-b border-white/20 rounded-none focus:border-white text-lg" onchange="saveHealth('steps')">
+                        <span class="text-xs font-bold opacity-50">Pas</span>
+                    </div>
                 </div>
             </div>
 
@@ -197,7 +219,6 @@
                 <h3 class="text-[10px] font-black uppercase tracking-widest opacity-40 text-center">Séance du jour</h3>
                 <div id="list-sport" class="space-y-2 pb-10"></div>
             </div>
-            
             <div class="h-32 w-full"></div>
         </section>
 
@@ -222,7 +243,6 @@
                 <h3 class="text-[10px] font-black uppercase tracking-widest opacity-40 text-center">Repas du jour</h3>
                 <div id="list-food" class="space-y-2 pb-10"></div>
             </div>
-            
             <div class="h-32 w-full"></div>
         </section>
 
@@ -258,7 +278,6 @@
                 <h3 class="text-[10px] font-black uppercase tracking-widest opacity-40 text-center">Dernières mesures</h3>
                 <div id="list-body" class="space-y-2 pb-10"></div>
             </div>
-            
             <div class="h-32 w-full"></div>
         </section>
 
@@ -268,7 +287,6 @@
         <div class="bg-slate-900 w-full max-w-xs rounded-3xl p-6 border border-white/10 shadow-2xl">
             <h4 class="text-xs font-black uppercase tracking-widest text-center mb-4 opacity-60">Planifier le <span id="modal-date-display"></span></h4>
             <input type="text" id="plan-input" placeholder="Ex: Leg Day, Cardio, Repos..." class="w-full p-4 rounded-xl mb-4 font-bold uppercase text-sm text-center border-white/20">
-            
             <div class="flex flex-wrap gap-2 justify-center mb-6">
                 <button onclick="fillPlan('LEG DAY')" class="bg-white/5 px-3 py-1 rounded-full text-[10px] font-bold border border-white/10">LEG DAY</button>
                 <button onclick="fillPlan('PUSH')" class="bg-white/5 px-3 py-1 rounded-full text-[10px] font-bold border border-white/10">PUSH</button>
@@ -276,7 +294,6 @@
                 <button onclick="fillPlan('CARDIO')" class="bg-white/5 px-3 py-1 rounded-full text-[10px] font-bold border border-white/10">CARDIO</button>
                 <button onclick="fillPlan('REPOS')" class="bg-white/5 px-3 py-1 rounded-full text-[10px] font-bold border border-white/10">REPOS</button>
             </div>
-
             <div class="flex gap-2">
                 <button onclick="closePlanModal()" class="flex-1 py-3 opacity-50 font-bold text-[10px] uppercase">Annuler</button>
                 <button onclick="savePlan()" class="flex-1 rounded-xl font-bold text-[10px] uppercase shadow-lg" style="background: var(--primary); color: black;">Valider</button>
@@ -312,17 +329,25 @@
             quincy: { theme: 'theme-quincy', cals: 2600, prot: 180 }
         };
         
-        let db = JSON.parse(localStorage.getItem('fit_duo_v2')) || { 
-            samia: { sport:[], food:[], body:[], water:{}, planning:{} }, 
-            quincy: { sport:[], food:[], body:[], water:{}, planning:{} } 
+        // AJOUT steps et sleep dans la structure DB
+        let db = JSON.parse(localStorage.getItem('fit_duo_v3')) || { 
+            samia: { sport:[], food:[], body:[], water:{}, planning:{}, steps:{}, sleep:{} }, 
+            quincy: { sport:[], food:[], body:[], water:{}, planning:{}, steps:{}, sleep:{} } 
         };
+
+        // Migration v2 -> v3
+        const v2DB = JSON.parse(localStorage.getItem('fit_duo_v2'));
+        if(v2DB && !db.samia.sport.length) {
+            if(v2DB.samia) db.samia = { ...db.samia, ...v2DB.samia, steps:{}, sleep:{} };
+            if(v2DB.quincy) db.quincy = { ...db.quincy, ...v2DB.quincy, steps:{}, sleep:{} };
+        }
 
         let curMonth = new Date();
         let selDate = new Date().toISOString().split('T')[0];
         const today = new Date().toISOString().split('T')[0];
         let sportType = 'muscu';
 
-        function save() { localStorage.setItem('fit_duo_v2', JSON.stringify(db)); render(); }
+        function save() { localStorage.setItem('fit_duo_v3', JSON.stringify(db)); render(); }
 
         function switchUser(u) {
             curUser = u;
@@ -369,6 +394,14 @@
         }
 
         function addWater() { db[curUser].water[selDate] = (db[curUser].water[selDate] || 0) + 1; save(); }
+        
+        // Nouvelle fonction pour sauver Sleep/Steps
+        function saveHealth(type) {
+            const val = document.getElementById('in-' + type).value;
+            db[curUser][type][selDate] = val;
+            save();
+        }
+
         function addSport(type) {
             const data = { d: selDate, id: Date.now(), type: type };
             if(type === 'muscu') {
@@ -413,6 +446,10 @@
             const totalProt = dayFood.reduce((a,b)=>a+b.p, 0);
             const waterCount = userData.water[selDate] || 0;
             const planText = userData.planning[selDate] || "Rien de prévu";
+
+            // Update Steps & Sleep Inputs
+            document.getElementById('in-sleep').value = userData.sleep ? (userData.sleep[selDate] || "") : "";
+            document.getElementById('in-steps').value = userData.steps ? (userData.steps[selDate] || "") : "";
 
             document.getElementById('val-water').innerText = waterCount;
             document.getElementById('prog-water').style.width = Math.min((waterCount/8)*100, 100) + '%';
