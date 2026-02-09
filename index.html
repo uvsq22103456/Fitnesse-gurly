@@ -51,14 +51,12 @@
             padding: 1px 4px; border-radius: 4px; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 800; opacity: 0.9;
         }
 
-        /* Inputs généraux */
         input, select { background: rgba(0,0,0,0.3) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; outline: none; border-radius: 12px; }
         input:focus, select:focus { border-color: var(--primary) !important; }
         
-        /* CORRECTION IOS TIME INPUT */
         input[type="time"] {
             appearance: none; -webkit-appearance: none;
-            background: rgba(255,255,255,0.08) !important; /* Fond léger pour voir la zone */
+            background: rgba(255,255,255,0.08) !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
             color: white; 
             font-weight: 700; 
@@ -66,13 +64,11 @@
             padding: 6px 10px; 
             text-align: center;
             border-radius: 8px;
-            min-width: 80px; /* Largeur forcée pour le doigt */
+            min-width: 80px; 
             display: inline-block;
         }
-        /* Force l'icône blanche ou invisible mais cliquable */
         input[type="time"]::-webkit-calendar-picker-indicator { 
-            filter: invert(1); 
-            opacity: 0.6;
+            filter: invert(1); opacity: 0.6;
         }
 
         .nav-item { transition: all 0.3s; position: relative; }
@@ -124,13 +120,11 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-                
                 <div class="card p-4 relative overflow-hidden flex flex-col justify-between">
                     <div class="flex justify-between items-start mb-2">
                         <span class="text-[9px] font-black uppercase opacity-60">Sommeil</span>
                         <span class="text-xl">🌙</span>
                     </div>
-                    
                     <div class="space-y-2">
                         <div class="flex justify-between items-center">
                             <span class="text-[8px] opacity-50 uppercase mr-2">Coucher</span>
@@ -141,7 +135,6 @@
                             <input type="time" id="sleep-end" onchange="calcSleep()" onclick="this.showPicker()">
                         </div>
                     </div>
-
                     <div class="mt-3 pt-2 border-t border-white/5 text-center">
                         <span id="sleep-total" class="text-xl font-black text-white block">--h--</span>
                     </div>
@@ -160,17 +153,24 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3">
-                <div onclick="addWater()" class="card p-4 relative overflow-hidden group active:scale-95 transition cursor-pointer">
-                    <div class="absolute -right-4 -bottom-4 text-6xl opacity-10 group-hover:scale-110 transition">💧</div>
-                    <span class="text-[9px] font-black uppercase opacity-60">Hydratation</span>
-                    <div class="flex items-end gap-1 mt-1">
-                        <span class="text-3xl font-black" id="val-water">0</span>
-                        <span class="text-xs font-bold opacity-60 mb-1">Gourdes</span>
-                    </div>
-                    <div class="w-full bg-white/10 h-1 mt-3 rounded-full overflow-hidden">
-                        <div id="prog-water" class="h-full bg-blue-500 w-0 transition-all duration-500"></div>
+                <div class="card p-4 relative overflow-hidden group">
+                    <button onclick="updateWater(-1)" class="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-xs opacity-50 active:opacity-100 hover:bg-red-500/50 transition">
+                        -
+                    </button>
+
+                    <div onclick="updateWater(1)" class="cursor-pointer active:scale-95 transition h-full w-full">
+                        <div class="absolute -right-4 -bottom-4 text-6xl opacity-10 group-hover:scale-110 transition">💧</div>
+                        <span class="text-[9px] font-black uppercase opacity-60">Hydratation</span>
+                        <div class="flex items-end gap-1 mt-1">
+                            <span class="text-3xl font-black" id="val-water">0</span>
+                            <span class="text-xs font-bold opacity-60 mb-1">Gourdes</span>
+                        </div>
+                        <div class="w-full bg-white/10 h-1 mt-3 rounded-full overflow-hidden">
+                            <div id="prog-water" class="h-full bg-blue-500 w-0 transition-all duration-500"></div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="card p-4 relative overflow-hidden">
                     <div class="absolute -right-4 -bottom-4 text-6xl opacity-10">🔥</div>
                     <span class="text-[9px] font-black uppercase opacity-60">Volume Sport</span>
@@ -418,7 +418,14 @@
             save(); closePlanModal();
         }
 
-        function addWater() { db[curUser].water[selDate] = (db[curUser].water[selDate] || 0) + 1; save(); }
+        // NOUVELLE FONCTION GESTION EAU (Avec +1 et -1)
+        function updateWater(val) {
+            let current = db[curUser].water[selDate] || 0;
+            current += val;
+            if(current < 0) current = 0; // Pas de négatif
+            db[curUser].water[selDate] = current;
+            save();
+        }
         
         function calcSleep() {
             const s = document.getElementById('sleep-start').value;
