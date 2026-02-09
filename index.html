@@ -51,17 +51,29 @@
             padding: 1px 4px; border-radius: 4px; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 800; opacity: 0.9;
         }
 
+        /* Inputs généraux */
         input, select { background: rgba(0,0,0,0.3) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; outline: none; border-radius: 12px; }
         input:focus, select:focus { border-color: var(--primary) !important; }
         
-        /* Style spécifique pour l'input time pour qu'il soit joli sur iOS */
+        /* CORRECTION IOS TIME INPUT */
         input[type="time"] {
             appearance: none; -webkit-appearance: none;
-            background: transparent !important; border: none !important;
-            color: white; font-weight: 800; font-size: 14px;
-            padding: 0; text-align: right;
+            background: rgba(255,255,255,0.08) !important; /* Fond léger pour voir la zone */
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            color: white; 
+            font-weight: 700; 
+            font-size: 14px;
+            padding: 6px 10px; 
+            text-align: center;
+            border-radius: 8px;
+            min-width: 80px; /* Largeur forcée pour le doigt */
+            display: inline-block;
         }
-        input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.3; width: 12px; }
+        /* Force l'icône blanche ou invisible mais cliquable */
+        input[type="time"]::-webkit-calendar-picker-indicator { 
+            filter: invert(1); 
+            opacity: 0.6;
+        }
 
         .nav-item { transition: all 0.3s; position: relative; }
         .nav-active { color: var(--primary); opacity: 1 !important; transform: translateY(-5px); }
@@ -119,18 +131,18 @@
                         <span class="text-xl">🌙</span>
                     </div>
                     
-                    <div class="space-y-1">
-                        <div class="flex justify-between items-center bg-white/5 rounded px-2 py-1">
-                            <span class="text-[8px] opacity-50 uppercase">Coucher</span>
-                            <input type="time" id="sleep-start" onchange="calcSleep()">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[8px] opacity-50 uppercase mr-2">Coucher</span>
+                            <input type="time" id="sleep-start" onchange="calcSleep()" onclick="this.showPicker()">
                         </div>
-                        <div class="flex justify-between items-center bg-white/5 rounded px-2 py-1">
-                            <span class="text-[8px] opacity-50 uppercase">Lever</span>
-                            <input type="time" id="sleep-end" onchange="calcSleep()">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[8px] opacity-50 uppercase mr-2">Lever</span>
+                            <input type="time" id="sleep-end" onchange="calcSleep()" onclick="this.showPicker()">
                         </div>
                     </div>
 
-                    <div class="mt-2 text-center">
+                    <div class="mt-3 pt-2 border-t border-white/5 text-center">
                         <span id="sleep-total" class="text-xl font-black text-white block">--h--</span>
                     </div>
                 </div>
@@ -141,7 +153,7 @@
                         <span class="text-xl">👣</span>
                     </div>
                     <div class="flex items-center gap-2 mt-4">
-                        <input type="number" id="in-steps" placeholder="-" class="w-full p-1 text-center font-black bg-transparent border-b border-white/20 rounded-none focus:border-white text-xl" onchange="saveSteps()">
+                        <input type="number" id="in-steps" placeholder="-" class="w-full p-2 text-center font-black bg-transparent border-b border-white/20 rounded-xl focus:border-white text-xl" onchange="saveSteps()">
                     </div>
                     <div class="text-[8px] uppercase font-bold opacity-40 text-center mt-1">Pas / jour</div>
                 </div>
@@ -355,13 +367,6 @@
             quincy: { sport:[], food:[], body:[], water:{}, planning:{}, steps:{}, sleep:{} } 
         };
 
-        // Migration v3 -> v4
-        const v3DB = JSON.parse(localStorage.getItem('fit_duo_v3'));
-        if(v3DB && !db.samia.sport.length) {
-            if(v3DB.samia) db.samia = { ...db.samia, ...v3DB.samia };
-            if(v3DB.quincy) db.quincy = { ...db.quincy, ...v3DB.quincy };
-        }
-
         let curMonth = new Date();
         let selDate = new Date().toISOString().split('T')[0];
         const today = new Date().toISOString().split('T')[0];
@@ -415,28 +420,17 @@
 
         function addWater() { db[curUser].water[selDate] = (db[curUser].water[selDate] || 0) + 1; save(); }
         
-        // --- NOUVEAU LOGIQUE SOMMEIL ---
         function calcSleep() {
             const s = document.getElementById('sleep-start').value;
             const e = document.getElementById('sleep-end').value;
-            
             if(s && e) {
-                // Créer des dates bidons pour calculer la différence
                 let d1 = new Date("2000-01-01 " + s);
                 let d2 = new Date("2000-01-01 " + e);
-                
-                // Si l'heure de fin est plus petite que le début (ex: 23h -> 07h), c'est le lendemain
-                if (d2 < d1) {
-                    d2.setDate(d2.getDate() + 1);
-                }
-                
+                if (d2 < d1) d2.setDate(d2.getDate() + 1);
                 const diff = d2 - d1;
                 const hours = Math.floor(diff / 1000 / 60 / 60);
                 const minutes = Math.floor((diff / 1000 / 60) % 60);
-                
                 const formatted = `${hours}h${String(minutes).padStart(2, '0')}`;
-                
-                // Sauvegarde
                 db[curUser].sleep[selDate] = { start: s, end: e, total: formatted };
                 save();
             }
@@ -492,17 +486,14 @@
             const waterCount = userData.water[selDate] || 0;
             const planText = userData.planning[selDate] || "Rien de prévu";
 
-            // Update Steps
             document.getElementById('in-steps').value = userData.steps ? (userData.steps[selDate] || "") : "";
             
-            // Update Sleep UI
             const daySleep = userData.sleep ? userData.sleep[selDate] : null;
             if (daySleep && typeof daySleep === 'object') {
                 document.getElementById('sleep-start').value = daySleep.start || "";
                 document.getElementById('sleep-end').value = daySleep.end || "";
                 document.getElementById('sleep-total').innerText = daySleep.total || "--h--";
             } else {
-                // Reset si pas de données ou données ancien format
                 document.getElementById('sleep-start').value = "";
                 document.getElementById('sleep-end').value = "";
                 document.getElementById('sleep-total').innerText = "--h--";
