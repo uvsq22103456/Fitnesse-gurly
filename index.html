@@ -326,8 +326,8 @@
             <div class="flex items-center gap-2">
                 <button id="btn-add-img" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 active:scale-90 flex items-center justify-center"><i data-lucide="image" class="w-4 h-4"></i></button>
                 <div class="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl shadow-inner">
-                    <button id="tab-edit" class="px-4 py-1.5 text-[9px] font-bold rounded-lg bg-white dark:bg-slate-700 text-indigo-600 shadow-sm font-bold uppercase tracking-tighter">ÉDITER</button>
-                    <button id="tab-view" class="px-4 py-1.5 text-[9px] font-bold rounded-lg text-slate-500 font-bold uppercase tracking-tighter">VOIR</button>
+                    <button id="tab-edit" class="px-4 py-1.5 text-[9px] font-bold rounded-lg bg-white dark:bg-slate-700 text-indigo-600 shadow-sm font-bold uppercase tracking-tighter transition-all">ÉDITER</button>
+                    <button id="tab-view" class="px-4 py-1.5 text-[9px] font-bold rounded-lg text-slate-500 font-bold uppercase tracking-tighter transition-all">VOIR</button>
                 </div>
             </div>
         </div>
@@ -350,7 +350,7 @@
         import { getFirestore, collection, doc, addDoc, onSnapshot, setDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // FIREBASE RULE 1 & 3: CONFIGURATION ORIGINALE
+        // FIREBASE CONFIG
         const firebaseConfig = { apiKey: "AIzaSyBIHjJKZj_Bqw1XjHfJo4X3GWrA6GNLU8I", authDomain: "bu-buddy-4bafe.firebaseapp.com", projectId: "bu-buddy-4bafe", storageBucket: "bu-buddy-4bafe.firebasestorage.app", messagingSenderId: "1083707246516", appId: "1:1083707246516:web:c6c78c199c7eb9323554e1" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -607,7 +607,7 @@
             document.getElementById('in-proj-name').value = ""; document.querySelectorAll('.assign-check').forEach(c => c.checked = false);
         };
 
-        // NOTES (ROBUST KATEX AUTO-RENDER & FOCUS FIX)
+        // NOTES (ROBUST KATEX + TAB SWITCHING FIX)
         let currentNoteId = null;
         marked.setOptions({ breaks: true, gfm: true });
         
@@ -618,58 +618,68 @@
             onSnapshot(doc(db,'artifacts',appId,'public','data','notes',id), d => { if(d.exists() && currentNoteId === id && document.activeElement !== document.getElementById('nt-body')) { document.getElementById('nt-title').value = d.data().title || ""; document.getElementById('nt-body').value = d.data().content || ""; } });
         };
         
-        document.getElementById('tab-view').onclick = () => {
-            document.getElementById('nt-body').classList.add('hidden');
-            const p = document.getElementById('nt-preview');
-            p.classList.remove('hidden');
+        const toggleTab = (mode) => {
+            const editBtn = document.getElementById('tab-edit');
+            const viewBtn = document.getElementById('tab-view');
             
-            // 1. Get Text
-            let raw = document.getElementById('nt-body').value;
-            
-            // 2. Protect Math (Avoid Markdown eating Underscores)
-            const protectedRaw = raw.replace(/(\$\$[\s\S]*?\$\$)|(\$[^\$\n]*?\$)/g, (match) => {
-                return match.replace(/_/g, '\\_'); 
-            });
+            // Classes actives vs inactives
+            const activeClasses = ['bg-white', 'dark:bg-slate-700', 'text-indigo-600', 'shadow-sm'];
+            const inactiveClasses = ['text-slate-500'];
 
-            // 3. Render Markdown
-            p.innerHTML = marked.parse(protectedRaw);
-            
-            // 4. Render KaTeX
-            renderMathInElement(p, {
-                delimiters: [
-                    {left: '$$', right: '$$', display: true},
-                    {left: '$', right: '$', display: false}
-                ],
-                throwOnError: false
-            });
+            if(mode === 'view') {
+                // UI LOGIC
+                document.getElementById('nt-body').classList.add('hidden');
+                document.getElementById('nt-preview').classList.remove('hidden');
+                
+                // BUTTON STYLE SWAP
+                editBtn.classList.remove(...activeClasses);
+                editBtn.classList.add(...inactiveClasses);
+                viewBtn.classList.remove(...inactiveClasses);
+                viewBtn.classList.add(...activeClasses);
+
+                // RENDER LOGIC
+                let raw = document.getElementById('nt-body').value;
+                const protectedRaw = raw.replace(/(\$\$[\s\S]*?\$\$)|(\$[^\$\n]*?\$)/g, (match) => { return match.replace(/_/g, '\\_'); });
+                document.getElementById('nt-preview').innerHTML = marked.parse(protectedRaw);
+                renderMathInElement(document.getElementById('nt-preview'), {
+                    delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
+                    throwOnError: false
+                });
+
+            } else {
+                // UI LOGIC
+                document.getElementById('nt-body').classList.remove('hidden');
+                document.getElementById('nt-preview').classList.add('hidden');
+
+                // BUTTON STYLE SWAP
+                viewBtn.classList.remove(...activeClasses);
+                viewBtn.classList.add(...inactiveClasses);
+                editBtn.classList.remove(...inactiveClasses);
+                editBtn.classList.add(...activeClasses);
+            }
         };
+
+        document.getElementById('tab-view').onclick = () => toggleTab('view');
+        document.getElementById('tab-edit').onclick = () => toggleTab('edit');
         
-        document.getElementById('tab-edit').onclick = () => { document.getElementById('nt-body').classList.remove('hidden'); document.getElementById('nt-preview').classList.add('hidden'); };
-        
-        // --- FORMATTER CORRIGÉ (Focus Management) ---
+        // --- FORMATTER (Focus Management) ---
         window.fmt = (startTag, endTag = "") => {
             const textarea = document.getElementById('nt-body');
             const start = textarea.selectionStart;
             const end = textarea.selectionEnd;
             const text = textarea.value;
             
-            // Insertion
             const before = text.substring(0, start);
             const selected = text.substring(start, end);
             const after = text.substring(end);
             textarea.value = before + startTag + selected + endTag + after;
 
-            // Sauvegarde
             saveDeb(currentNoteId, { content: textarea.value });
-
-            // Focus & Replace Cursor
             textarea.focus();
             if (start === end) {
-                // Si pas de sélection, curseur au milieu
                 const newPos = start + startTag.length;
                 textarea.setSelectionRange(newPos, newPos);
             } else {
-                // Si sélection, on sélectionne le tout
                 textarea.setSelectionRange(start, end + startTag.length + endTag.length);
             }
         };
